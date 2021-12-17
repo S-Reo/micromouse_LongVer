@@ -23,7 +23,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-//aaaaaaaaaaaaaaaaaaaa
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "math.h"
@@ -36,6 +36,7 @@
 #include "stm32f4xx_hal_tim.h"
 
 #include "ICM_20648.h"
+#include "Flash_F405.h"
 
 #include "Control.h"
 /* USER CODE END Includes */
@@ -96,8 +97,8 @@
 #define REDUCATION_RATIO 4  //
 
 #define MM_PER_PULSE  /*mm/pulse*/  ((PI *TIRE_DEAMETER) /32768)
-#define START_ACCEL_PULSE  /*開始時の�?速パルス*/  START_ACCEL_DISTANCE/MM_PER_PULSE
-#define ACCE_DECE_PULSE /*�?速パルス*/ ACCE_DECE_DISTANCE/MM_PER_PULSE
+#define START_ACCEL_PULSE  /*開始時の?��?速パルス*/  START_ACCEL_DISTANCE/MM_PER_PULSE
+#define ACCE_DECE_PULSE /*?��?速パルス*/ ACCE_DECE_DISTANCE/MM_PER_PULSE
 #define SLOW_ROTATE_PULSE (90*PI/4) /  MM_PER_PULSE
 #define QUARTER_ROTATE_PULSE (TREAD_WIDTH * PI/4) / MM_PER_PULSE
 #define DECE_CURVE_PULSE (45 -(TREAD_WIDTH/2)) / MM_PER_PULSE
@@ -152,13 +153,17 @@ static void MX_TIM1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+uint32_t run_log_address;
+float data_log[1024*20]={0};//80Kbyte 10msで取ると、2分以上取れる。
+
 float Target_velocity = 0;
 float Target_pulse = 90/MM_PER_PULSE;//46680.0; //45660;
 float Target_pul_quarter = QUARTER_ROTATE_PULSE;
 float Target_rotate = 0;
 extern float Target_R_velo, Target_L_velo;
 
-//目標角速度 rad/s
+//目標角�?�度 rad/s
 float Target_Rad_velo=0;
 
 float a_start = T1 * SEARCH_SPEED * SEARCH_SPEED /(2 * START_ACCEL_DISTANCE);
@@ -183,12 +188,12 @@ uint16_t analog1[3]={0,0,0}, analog2[2]={0,0};
 
 
 
-uint8_t x=0, y=0;//座標�??��変数
+uint8_t x=0, y=0;//座標�???��?��変数
 //歩数マップデータ
 uint8_t walk_map[NUMBER_OF_SQUARES][NUMBER_OF_SQUARES];
 double goal_time[5];
 
-//左右のモータのカウント値のログ
+//左右のモータのカウント�?�のログ
 
 int16_t test_R,test_L;
 int16_t sl_ad1_10, fr_ad1_14=1, fl_ad2_11=0, sr_ad2_15; //
@@ -244,15 +249,15 @@ PID_Control Wall = {
 
 typedef struct  {
 
-	//試しに型を変えて動か�?
-	//おかしくなったら戻�?
+	//試しに型を変えて動か?��?
+	//おかしくなったら戻?��?
 	//int
 	//int
 	//int16_t
 
 	int count; //oパルスの取�?
 	int integrate; //oパルスの積�?
-	int16_t target;//oパルスの目??��?��?
+	int16_t target;//oパルスの目???��?��??��?��?
 
 }encoder;
 
@@ -347,7 +352,7 @@ PUTCHAR_PROTOTYPE {
 	HAL_UART_Transmit(&huart1, (uint8_t*)&ch, 1, 0xFFFF);
 	return ch;
 }
-// Flashから読みした?ータを避するRAM上�???��?��?��?
+// Flashから読みした?ータを避するRAM上�????��?��??��?��??��?��?
 // 4byteごとにアクセスをするで、アドレスに配置する
 
 static uint8_t work_ram[BACKUP_FLASH_SECTOR_SIZE] __attribute__ ((aligned(4)));
@@ -360,7 +365,7 @@ static uint8_t work_ram[BACKUP_FLASH_SECTOR_SIZE] __attribute__ ((aligned(4)));
 //}mapdata;
 //mapdata work_ram[16][16];
 
-// Flashのsector1の�?
+// Flashのsector1の?��?
 // 配置と定義はリンカスクリプトで行う
 extern char _backup_flash_start;
 
@@ -428,8 +433,8 @@ void mapcopy(){
 			work_ram[k+3] = wall[i][j].west;
 			k+=4;
 		}
-		//要�?は4*NOS*NOS番目 - 1 まで�?ま�?
-		//kは60まで行ったあと�?4*NOS*NOS になって値が�?�らず終わ�?
+		//�?��?は4*NOS*NOS番目 - 1 まで?��?ま?��?
+		//kは60まで行ったあと?��?4*NOS*NOS になって値が�??��らず終わ?��?
 
 	}
 
@@ -452,7 +457,7 @@ void mapprint(){
 
 	static int i = 0, j=0,k=0;
 #if 1
-	//迷路�?報
+	//迷路?��?報
 	for(i=0; i < NUMBER_OF_SQUARES; i++){
 		for(j=0; j < NUMBER_OF_SQUARES * 4; j++){
 			printf("%u",work_ram[k]);
@@ -472,7 +477,7 @@ void mapprint(){
 	printf("\r\n");
 
 
-	//歩数マッ�?
+	//歩数マッ?��?
 	for(i=0; i < NUMBER_OF_SQUARES; i++){
 		for(j=0; j < NUMBER_OF_SQUARES; j++){
 			printf("%u  ",work_ram[k]);
@@ -514,7 +519,7 @@ bool Flash_clear()
     EraseInitStruct.NbSectors = 1;
 
     // Eraseに失敗したsector番号がerror_sectorに入
-    // 正常にEraseができたと??��?��?
+    // 正常にEraseができたと???��?��??��?��?
     uint32_t error_sector;
     HAL_StatusTypeDef result = HAL_FLASHEx_Erase(&EraseInitStruct, &error_sector);
 
@@ -531,7 +536,7 @@ uint8_t* Flash_load() //uint8_t*
     return work_ram;
 }
 
-// Flashのsector1を消去後�???��?��タを書き込
+// Flashのsector1を消去後�????��?��??��?��タを書き込
 bool Flash_store()
 {
     // Flashをclear
@@ -669,7 +674,7 @@ void Motor_PWM_Stop(){ // モータPWMの開始とCCR値の設
 }
 
 void PWM_Log(){
-//左右のモータのカウント値を配列に格納
+//左右のモータのカウント�?�を�?��?�に格�?
 
 
 }
@@ -952,22 +957,22 @@ void Face_Front(){
 //o グローバル変数の処
 //o 走行用の関数
 //Motion.cとMotion.hにまとめる
-//時間待ち関数
+//時間�?ち関数
 
 void wait(double wait_second)
 {
-	//グローバル変数のtimerを使う
-	//いらない制御を切って待つ。か、つけっぱなし。
-	//つけっぱなしのパターン
-	//待った先の時間 - 現在の時間
-	//待ちたい時間
+	//グローバル変数のtimerを使�?
+	//�?らな�?制御を�??って�?つ。か、つけっぱなし�??
+	//つけっぱなし�?�パターン
+	//�?った�?��?�時間 - 現在の時間
+	//�?ちたい時間
 	double starting_point_of_time = elapsed_time;
 	while(starting_point_of_time + wait_second > elapsed_time)
 	{
 
 	}
 
-	//いらない制御を切るパターン
+	//�?らな�?制御を�??るパターン
 }
 
 
@@ -1050,7 +1055,7 @@ void Decelerate(){
 		mode.accel = 3;
 		printf("%d , %d\r\n",EN3_L.integrate , EN4_R.integrate);
 #if 1
-		if(EN3_L.integrate + EN4_R.integrate < ACCE_DECE_PULSE * 2 - (WALL_JUDGE_PULSE  * 2 *3/5) ){//ここの閾値の意味:減速する距離は半区画 -
+		if(EN3_L.integrate + EN4_R.integrate < ACCE_DECE_PULSE * 2 - (WALL_JUDGE_PULSE  * 2 *3/5) ){//ここの閾値の意味:減�?�する距離は半区画 -
 		  if(fr_average > RIGHT_WALL && fl_average > LEFT_WALL){
 			  mode.control = 0;
 
@@ -1082,7 +1087,7 @@ void Decelerate(){
 	Motor_Count_Clear();
 
 
-	//printf("減�?????��?��??��?��???��?��??��?��した???��?��??��?��?\r\n");
+	//printf("減�??????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��した????��?��??��?��???��?��??��?��?\r\n");
 }
 float straight_trapezoid(float Now_velo){ //o引数は、グローバル変数45660
 
@@ -1176,7 +1181,7 @@ void straight(){ //uint8_t block_num
       		  }else
       			IMU_Control(0, imu_data,T1,imu.KP,imu.KI, 0 );
     		break;
-    	case 2: //o左に壁がな??��?��?。右にあれば右P
+    	case 2: //o左に壁がな???��?��??��?��?。右にあれば右P
     		if(EN_Body.integrate < Target_pulse*85/1000){
     		  if(fr_average > RIGHT_WALL )
     		      Side_Wall_Control(fr_average,fl_average,T8,Wall.KP, Wall.KI,Wall.KD);
@@ -1234,7 +1239,7 @@ void straight(){ //uint8_t block_num
 
     }
 
-    printf("3区画進んだ??��?��? : %d \r\n",check);
+    printf("3区画進んだ???��?��??��?��? : %d \r\n",check);
 
 #endif
 }
@@ -1282,7 +1287,7 @@ void IMU_turn(int8_t target_angle, double target_angle_velo){
 void turn_right(){
 
 	//左右の車輪速度制御
-	//or 角速度制御で旋回
+	//or 角�?�度制御で旋回
 	  uint8_t counter=0;
 	  //printf("turnはじめ\r\n");
 	   while(counter < 1){
@@ -1416,27 +1421,27 @@ void slow_turn_L(){
 	//左右輪制御
 	mode.control = 6;
 
-	//等加速度加速減速
+	//等加速度�?速減�??
 	while(EN3_L.integrate + EN4_R.integrate < CURVE_KLOTHOIDE_PULSE * 2){
 		mode.accel = 4;
 
 	}
-	//加速やめる
+	//�?速やめる
 	mode.accel = 0;
 
-	//等速カーブ
+	//等�?�カー�?
 	while(CURVE_KLOTHOIDE_PULSE * 2 <= EN3_L.integrate + EN4_R.integrate && EN3_L.integrate + EN4_R.integrate < SLOW_ROTATE_PULSE * 2 - CURVE_KLOTHOIDE_PULSE * 2){
 		Target_velocity = CURVE_SPEED;
 		Target_R_velo = CURVE_SPEED   * (90+TREAD_WIDTH)/90;
 		Target_L_velo = Target_R_velo * (90-TREAD_WIDTH) / (90+TREAD_WIDTH);
-		//タイヤ幅が広くなってから比率を変えていなかったはず
+		//タイヤ�?が�?くなってから比率を変えて�?なかった�?��?
 	}
-	//等加速度加速減速
+	//等加速度�?速減�??
 	while(EN3_L.integrate + EN4_R.integrate < SLOW_ROTATE_PULSE * 2){
 		mode.accel = 5;
 
 	}
-	//加減速やめる
+	//�?減�?�やめる
 	mode.accel = 0;
 
 //		if(Body_angle > 90){
@@ -1611,42 +1616,42 @@ void back_calib(){
 
 void start_calib(){
 
-	//閾値設定も兼ねる
-	//前に出る
+	//閾値設定も兼ね�?
+	//前に出�?
 	adjust_position();
-	//右を向く
+	//右を向�?
 	turn_right();
-	//後ろに下がる
+	//後ろに下が�?
 	back_calib();
-	//前に出る
+	//前に出�?
 	adjust_position();
 
-	//前センサを取得する
-	//左を向く
+	//前センサを取得す�?
+	//左を向�?
 	turn_left();
-	//後ろに下がる
+	//後ろに下が�?
 	back_calib();
-	//左右センサー値取得
+	//左右センサー値取�?
 
-	//前に出る
+	//前に出�?
 	adjust_position();
-	//左を向く
+	//左を向�?
 	turn_left();
-	//後ろに下がる
+	//後ろに下が�?
 	back_calib();
-	//前に出る
+	//前に出�?
 	adjust_position();
-	//前センサを取得する
-	//右を向く
+	//前センサを取得す�?
+	//右を向�?
 	turn_right();
-	//後ろに下がる
+	//後ろに下が�?
 	back_calib();
-	//左右センサー値取得
+	//左右センサー値取�?
 
-	//前センサの平均→閾値に代入
-	//左右センサの平均→閾値に代入
+	//前センサの平�?→閾値に代入
+	//左右センサの平�?→閾値に代入
 
-	//経過時間計測オフ
+	//経過時間計測オ�?
 
 
 
@@ -1677,7 +1682,7 @@ void R_turn_select(){
 void L_turn_select(){
   switch(mode.turn){
   case 0:
-	  //加減速超信地旋回
+	  //�?減�?��?信地旋回
 	  Decelerate();
 	  wait(0.3);
 	  turn_left();
@@ -1689,11 +1694,11 @@ void L_turn_select(){
 	  slow_turn_L();
 	  break;
   case 2:
-	  //片輪旋回
+	  //�?輪旋回
 	  shinchi_turn_L();
 	  break;
   case 3:
-	  //IMUで等角速度超信地旋回
+	  //IMUで等角�?�度�?信地旋回
       Decelerate();
       IMU_turn(90,5);
       IMU_init();
@@ -1770,32 +1775,37 @@ void Gain_Change(){
 
 }
 
+//flash書き換え�?�新しい関数を記述
+//書き込み先�?�スタートアドレスを定義
+//500Kbyte欲しいので�?128Kbyte�?4本. 8~11
+//セクターの削除(�?初に�?回呼び出�?)
+//セクターに書き込�?(割り込み中で実行する�?�で処�?を軽くする努�?(物�?�?に無�?かもしれな�?))
 
 void Walk_Map_Update(){
 	//初期化大事すぎた。hosu
 	int i = 0, j=0, flag=0, hosu=0;
 
-	//区画数に応じて"�?大歩数 + ゴールのマス�?-1"に初期�?
+	//区画数に応じて"?��?大歩数 + ゴールのマス?��?-1"に初期?��?
 	for(i=0; i < NUMBER_OF_SQUARES; i++){
 		for(j=0; j < NUMBER_OF_SQUARES; j++){
 			walk_map[i][j] = NUMBER_OF_SQUARES * NUMBER_OF_SQUARES - 1;
 		}
 	}
 
-	//ゴール区画�?0に初期�?
+	//ゴール区画?��?0に初期?��?
 	for(i=X_GOAL_LESSER; i <= X_GOAL_LARGER; i++){
 		for(j=Y_GOAL_LESSER; j <= Y_GOAL_LARGER; j++){
 			walk_map[i][j] = 0;
 		}
 	}
 
-	//壁が無�?として、�?�区画に歩数を割り当てる�??
+	//壁が無?��?として�?��??��区画に歩数を割り当てる�??
 	do{
 		flag = 0;
 		  for(i=0; i < NUMBER_OF_SQUARES; i++){
 
 			  for(j=0; j < NUMBER_OF_SQUARES; j++){
-				  //map�?"�?大歩数 + ゴールのマス�?-1"でなければ値を代入�?
+				  //map?��?"?��?大歩数 + ゴールのマス?��?-1"でなければ値を代入?��?
 				  //walk_map[i][j] != NUMBER_OF_SQUARES * NUMBER_OF_SQUARES - 1 &&
 				  if(walk_map[i][j] == hosu){
 
@@ -1816,7 +1826,7 @@ void Walk_Map_Update(){
 			       }
 			  }
 		  }
-		  //歩数と繰り返しの回数は等し�?
+		  //歩数と繰り返しの回数は等し?��?
 		  hosu++;
 	}while(flag);
 
@@ -1824,14 +1834,14 @@ void Walk_Map_Update(){
 void Walk_Count_Map(){
 //	static int8_t xw,yw;
 //
-//	//歩数マップ�?�初期化_1023
+//	//歩数マップ�??��初期化_1023
 //	Walk_Map_Init();
 //
 //	for(xw = 0; xw < NUMBER_OF_SQUARES; xw++){
 //
 //		for(yw = 0; yw < NUMBER_OF_SQUARES; yw++){
 //			//
-//			//1023かそれ以�?(探索済み)�?
+//			//1023かそれ以?��?(探索済み)?��?
 //			if(walk_map[xw][yw] != 1023 ){
 //				if(wall[xw][yw].north == NOWALL && walk_map[xw][yw+1] > walk_map[xw][yw] ){
 //					walk_map[xw][yw] ++;
@@ -1898,8 +1908,8 @@ void Tire_Maintenance(){
 	HAL_TIM_Base_Stop_IT(&htim1);
 	HAL_TIM_Base_Stop_IT(&htim8);
 	while(1){
-		printf("リセ�?トな�? : %d\r\n", All_Pulse_anytime);
-		printf("リセ�?トあ�? : %d\r\n", All_Pulse_cut);
+		printf("リセ?��?トな?��? : %d\r\n", All_Pulse_anytime);
+		printf("リセ?��?トあ?��? : %d\r\n", All_Pulse_cut);
 		printf("\r\n");
 	}
 
@@ -1923,11 +1933,11 @@ void wall_set(){
 
 }
 void judge(){
-	/*--旋回モード選�?--*/
-	#define ACCE_DECE  //�?区画ずつ�?減�??. 旋回はエンコー�?
+	/*--旋回モード選?��?--*/
+	#define ACCE_DECE  //?��?区画ずつ?��?減�??. 旋回はエンコー?��?
 	//#define SLOW //緩旋回.IMUあり
-	//#define SHINCHI //�?輪信地旋回
-	//#define IMU //�?区画ずつ�?減�??. 旋回はIMU
+	//#define SHINCHI //?��?輪信地旋回
+	//#define IMU //?��?区画ずつ?��?減�??. 旋回はIMU
 	/*----*/
     	  switch(my_direction){
     	  case north:
@@ -2086,21 +2096,21 @@ void judge(){
 void left_search(){
 	start_calib();
 
-	/*------旋回モード選択-----*/
+	/*------旋回モード選�?-----*/
 	mode.turn = 0;
 	//------------------------------//
-	// 0 : 超信地旋回で1区画ずつ //
+	// 0 : �?信地旋回で1区画ずつ //
 	// 1 : 緩旋回                     //
-	// 2 : 片輪旋回                  //
-	// 3 : IMUで超信地旋回       //
+	// 2 : �?輪旋回                  //
+	// 3 : IMUで�?信地旋回       //
 	/*----------------------------*/
 
 	  //Face_Front();
 
 	/*ここは書籍から引用*/
-	map_init();//マップ�??��初期?��?
-	x = y = 0;//座標�??��初期?��?
-	my_direction=north;//方向�??��初期?��?
+	map_init();//マップ�???��?��初期??��?��?
+	x = y = 0;//座標�???��?��初期??��?��?
+	my_direction=north;//方向�???��?��初期??��?��?
 	/*ここまで*/
 	wall_set();
 	wall[x][y].south = WALL;
@@ -2110,10 +2120,10 @@ void left_search(){
 	y = y + 1;
 
 
-      while( (x!=3) || (y!=1) ){//ゴール座標でな?��?と?��?
+      while( (x!=3) || (y!=1) ){//ゴール座標でな??��?��?と??��?��?
 
     	  wall_set(); //相対方向から絶対方向に変換
-    	  judge();//今�??��方角とセンサ値によって、アクションを変える�??
+    	  judge();//今�???��?��方角とセンサ値によって、アクションを変える�??
     	  printf("x : %d \r\n", x);
     	  printf("y : %d \r\n", y);
 
@@ -2130,7 +2140,7 @@ void left_search(){
       LED_Change();
     	//Execution_Select();
 #if 0
-        if( fl_average < LEFT_WALL ){ //o左に壁が無?��?
+        if( fl_average < LEFT_WALL ){ //o左に壁が無??��?��?
 #if 0
         	if(mode.action != 1 || mode.action != 3)
         	Decelerate();
@@ -2148,7 +2158,7 @@ void left_search(){
 	        //printf("左に壁ない\r\n");
 #endif
 //o左に曲がる
-         }else if( (sl_average+sr_average)/2 < FRONT_WALL ){ //o前に壁が無?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?
+         }else if( (sl_average+sr_average)/2 < FRONT_WALL ){ //o前に壁が無??????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?
 
             straight();
             mode.action = 2;
@@ -2159,7 +2169,7 @@ void left_search(){
 //		    Target_pulse = Target_pulse + 45660;
 //		    mode.accel = 1;
 //       }
-    	  else if( fr_average < RIGHT_WALL ){ //o右に壁が無?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?
+    	  else if( fr_average < RIGHT_WALL ){ //o右に壁が無??????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?????��?��??��?��???��?��??��?��????��?��??��?��???��?��??��?��?
 #if 0
     		Decelerate();
     		slow_turn_R();
@@ -2210,21 +2220,21 @@ void goal_area_search(){
 	switch(my_direction){
 	case north:
 
-		//現在の座標 == ゴールの下2マス
-		//xが小さいほうなら、右回り
+		//現在の座�? == ゴールの�?2マス
+		//xが小さ�?ほ�?なら�?�右回り
 		//直進
 		Accelerate();
 		Decelerate();
 		y++;
 		//壁更新
 		wall_set();
-		//待つ
+		//�?つ
 		for(int i=0;i < WAIT*0.5;i++);
 
 		if(x == X_GOAL_LESSER){
 			orbit = 'R';
 		}
-		//xが大きい方なら、左回り
+		//xが大きい方なら�?�左回り
 		else if(x == X_GOAL_LARGER){
 			orbit = 'L';
 		}
@@ -2233,7 +2243,7 @@ void goal_area_search(){
 			//右回り
 			turn_right();
 			my_direction = east;
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 			//直進
 			Accelerate();
@@ -2241,14 +2251,14 @@ void goal_area_search(){
 			x++;
 			//壁更新
 			wall_set();
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 
 
 			//右回り
 			turn_right();
 			my_direction = south;
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 			//直進
 			Accelerate();
@@ -2256,7 +2266,7 @@ void goal_area_search(){
 			y--;
 			//壁更新
 			wall_set();
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 
 			//右回転
@@ -2278,7 +2288,7 @@ void goal_area_search(){
 			//左回り
 			turn_left();
 			my_direction = west;
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 			//直進
 			Accelerate();
@@ -2286,12 +2296,12 @@ void goal_area_search(){
 			x--;
 			//壁更新
 			wall_set();
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 
 			turn_left();
 			my_direction = south;
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 			//直進
 			Accelerate();
@@ -2299,7 +2309,7 @@ void goal_area_search(){
 			y--;
 			//壁更新
 			wall_set();
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 
 			//左回転
@@ -2325,14 +2335,14 @@ void goal_area_search(){
 		x++;
 		//壁更新
 		wall_set();
-		//待つ
+		//�?つ
 		for(int i=0;i < WAIT*0.5;i++);
 
-		//現在の座標 == ゴールの左2マス
+		//現在の座�? == ゴールの左2マス
 		if(y == Y_GOAL_LESSER){
 			orbit = 'L';
 		}
-		//yが大きい方なら、左回り
+		//yが大きい方なら�?�左回り
 		else if(y == Y_GOAL_LARGER){
 			orbit = 'R';
 		}
@@ -2340,7 +2350,7 @@ void goal_area_search(){
 			//右回り
 			turn_right();
 			my_direction = south;
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 			//直進
 			Accelerate();
@@ -2348,13 +2358,13 @@ void goal_area_search(){
 			y--;
 			//壁更新
 			wall_set();
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 
 			//右回り
 			turn_right();
 			my_direction = west;
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 			//直進
 			Accelerate();
@@ -2362,7 +2372,7 @@ void goal_area_search(){
 			x--;
 			//壁更新
 			wall_set();
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 
 			//右回転
@@ -2384,7 +2394,7 @@ void goal_area_search(){
 			//左回り
 			turn_left();
 			my_direction = north;
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 			//直進
 			Accelerate();
@@ -2392,12 +2402,12 @@ void goal_area_search(){
 			y++;
 			//壁更新
 			wall_set();
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 
 			turn_left();
 			my_direction = west;
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 			//直進
 			Accelerate();
@@ -2405,7 +2415,7 @@ void goal_area_search(){
 			x--;
 			//壁更新
 			wall_set();
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 
 			//左回転
@@ -2432,14 +2442,14 @@ void goal_area_search(){
 		y--;
 		//壁更新
 		wall_set();
-		//待つ
+		//�?つ
 		for(int i=0;i < WAIT*0.5;i++);
 
-		//現在の座標 == ゴールの上2マス
+		//現在の座�? == ゴールの�?2マス
 		if(x == X_GOAL_LESSER){
 			orbit = 'L';
 		}
-		//xが大きい方なら、左回り
+		//xが大きい方なら�?�左回り
 		else if(x == X_GOAL_LARGER){
 			orbit = 'R';
 		}
@@ -2447,7 +2457,7 @@ void goal_area_search(){
 			//右回り
 			turn_right();
 			my_direction = west;
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 			//直進
 			Accelerate();
@@ -2455,13 +2465,13 @@ void goal_area_search(){
 			x--;
 			//壁更新
 			wall_set();
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 
 			//右回り
 			turn_right();
 			my_direction = north;
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 			//直進
 			Accelerate();
@@ -2469,7 +2479,7 @@ void goal_area_search(){
 			y++;
 			//壁更新
 			wall_set();
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 
 			//右回転
@@ -2491,7 +2501,7 @@ void goal_area_search(){
 			//左回り
 			turn_left();
 			my_direction = east;
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 			//直進
 			Accelerate();
@@ -2499,12 +2509,12 @@ void goal_area_search(){
 			x++;
 			//壁更新
 			wall_set();
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 
 			turn_left();
 			my_direction = north;
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 			//直進
 			Accelerate();
@@ -2512,7 +2522,7 @@ void goal_area_search(){
 			y++;
 			//壁更新
 			wall_set();
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 
 			//左回転
@@ -2537,14 +2547,14 @@ void goal_area_search(){
 		x--;
 		//壁更新
 		wall_set();
-		//待つ
+		//�?つ
 		for(int i=0;i < WAIT*0.5;i++);
 
-		//現在の座標 == ゴールの右2マス
+		//現在の座�? == ゴールの右2マス
 		if(y == Y_GOAL_LESSER){
 			orbit = 'R';
 		}
-		//xが大きい方なら、左回り
+		//xが大きい方なら�?�左回り
 		else if(y == Y_GOAL_LARGER){
 			orbit = 'L';
 		}
@@ -2552,7 +2562,7 @@ void goal_area_search(){
 			//右回り
 			turn_right();
 			my_direction = north;
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 			//直進
 			Accelerate();
@@ -2560,13 +2570,13 @@ void goal_area_search(){
 			y++;
 			//壁更新
 			wall_set();
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 
 			//右回り
 			turn_right();
 			my_direction = east;
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 			//直進
 			Accelerate();
@@ -2574,7 +2584,7 @@ void goal_area_search(){
 			x++;
 			//壁更新
 			wall_set();
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 
 			//右回転
@@ -2596,7 +2606,7 @@ void goal_area_search(){
 			//左回り
 			turn_left();
 			my_direction = south;
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 			//直進
 			Accelerate();
@@ -2604,12 +2614,12 @@ void goal_area_search(){
 			y--;
 			//壁更新
 			wall_set();
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 
 			turn_left();
 			my_direction = east;
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 			//直進
 			Accelerate();
@@ -2617,7 +2627,7 @@ void goal_area_search(){
 			x++;
 			//壁更新
 			wall_set();
-			//待つ
+			//�?つ
 			for(int i=0;i < WAIT*0.5;i++);
 
 			//左回転
@@ -2642,29 +2652,29 @@ void goal_area_search(){
 	//マップ更新
 	Walk_Map_Update();
 
-	//出口まで移動
+	//出口まで移�?
 	//向きを決める
 
 
 
-	//向きが反転して、xもしくはyが変わる
+	//向きが反転して、xもしく�?�yが変わ�?
 
 }
 
 //足立法探索
 void Adachi_judge(){
 
-	/*------旋回モード選択-----*/
+	/*------旋回モード選�?-----*/
 	mode.turn = 0;
 	//------------------------------//
-	// 0 : 超信地旋回で1区画ずつ //
+	// 0 : �?信地旋回で1区画ずつ //
 	// 1 : 緩旋回                     //
-	// 2 : 片輪旋回                  //
-	// 3 : IMUで超信地旋回       //
+	// 2 : �?輪旋回                  //
+	// 3 : IMUで�?信地旋回       //
 	/*----------------------------*/
 
 
-	//今�?�評価値よりも前の評価値が小さければ...
+	//今�??��評価値よりも前の評価値が小さければ...
 	//前左右
 	  switch(my_direction){
 	  case north:
@@ -2713,13 +2723,13 @@ void Adachi_judge(){
 	       	  x++;
 		  }
 		  else if(wall[x][y].north == NOWALL && walk_map[x][y+1] < walk_map[x][y] && y < NUMBER_OF_SQUARES-1){
-			  //左�?
+			  //左?��?
 			  L_turn_select();
 	       	  my_direction = north;
 	       	  y++;
 		  }
 		  else if(wall[x][y].south == NOWALL && walk_map[x][y-1] < walk_map[x][y] && y > 0){
-			  //右�?
+			  //右?��?
 			  R_turn_select();
 	       	  my_direction = south;
 	       	  y--;
@@ -2791,13 +2801,13 @@ void Adachi_judge(){
 	       	  x--;
 		  }
 		  else if(wall[x][y].south == NOWALL &&walk_map[x][y-1] < walk_map[x][y] && y > 0){
-			  //左�?
+			  //左?��?
 			  L_turn_select();
 	       	  my_direction = south;
 	       	  y--;
 		  }
 		  else if(wall[x][y].north == NOWALL &&walk_map[x][y+1] < walk_map[x][y] && y < NUMBER_OF_SQUARES-1){
-			  //右�?
+			  //右?��?
 			  R_turn_select();
 	       	  my_direction = north;
 	       	  y++;
@@ -2827,17 +2837,17 @@ void Adachi_judge(){
 }
 void Adachi_go_back(){
 
-	/*------旋回モード選択-----*/
+	/*------旋回モード選�?-----*/
 	mode.turn = 0;
 	//------------------------------//
-	// 0 : 超信地旋回で1区画ずつ //
+	// 0 : �?信地旋回で1区画ずつ //
 	// 1 : 緩旋回                     //
-	// 2 : 片輪旋回                  //
-	// 3 : IMUで超信地旋回       //
+	// 2 : �?輪旋回                  //
+	// 3 : IMUで�?信地旋回       //
 	/*----------------------------*/
 
 
-	//今�?�評価値よりも前の評価値が小さければ...
+	//今�??��評価値よりも前の評価値が小さければ...
 	//前左右
 	  switch(my_direction){
 	  case north:
@@ -2886,13 +2896,13 @@ void Adachi_go_back(){
 	       	  x++;
 		  }
 		  else if(wall[x][y].north == NOWALL && walk_map[x][y+1] > walk_map[x][y] && y < NUMBER_OF_SQUARES-1){
-			  //左�?
+			  //左?��?
 			  L_turn_select();
 	       	  my_direction = north;
 	       	  y++;
 		  }
 		  else if(wall[x][y].south == NOWALL && walk_map[x][y-1] > walk_map[x][y] && y > 0){
-			  //右�?
+			  //右?��?
 			  R_turn_select();
 	       	  my_direction = south;
 	       	  y--;
@@ -2964,13 +2974,13 @@ void Adachi_go_back(){
 	       	  x--;
 		  }
 		  else if(wall[x][y].south == NOWALL &&walk_map[x][y-1] > walk_map[x][y] && y > 0){
-			  //左�?
+			  //左?��?
 			  L_turn_select();
 	       	  my_direction = south;
 	       	  y--;
 		  }
 		  else if(wall[x][y].north == NOWALL &&walk_map[x][y+1] > walk_map[x][y] && y < NUMBER_OF_SQUARES-1){
-			  //右�?
+			  //右?��?
 			  R_turn_select();
 	       	  my_direction = north;
 	       	  y++;
@@ -3002,31 +3012,32 @@ void Adachi_search(){
 	//back_calib();
 	/*ここは書籍から引用*/
 
-	//マップ�?�初期�?
+	//マップ�??��初期?��?
 	map_init();
-	//座標�?�初期�?
+	//座標�??��初期?��?
 	x = y = 0;
-	//方向�?�初期�?
+	//方向�??��初期?��?
 	my_direction=north;
 
 	/*ここまで*/
 
-	//壁情報の初期�?
+	//壁情報の初期?��?
 	wall_set();
 
 	//開始位置の後ろはWALL
-	//左右はwall_set()でセ�?�?
+	//左右はwall_set()でセ?��??��?
 	wall[x][y].south = WALL;
 
-	//歩数マップ�?�更新(ここでは初期�?)
+	//歩数マップ�??��更新(ここでは初期?��?)
 	Walk_Map_Update();
 
-	//�?初�?�直進
+	//?��?初�??��直進
 	Start_Accel();
 
 	x = 0;
 	y = y + 1;
 
+	int test_num = 0;
 	while( !((x>=X_GOAL_LESSER) && (x<=X_GOAL_LARGER)) || !( (y>=Y_GOAL_LESSER) && (y<=Y_GOAL_LARGER) ) ){
 		//壁更新
 		wall_set();
@@ -3036,6 +3047,16 @@ void Adachi_search(){
 
 		//次の動きを判定し動く
 		Adachi_judge();
+
+		test_num++;
+		if(test_num == 2)
+			break;
+	}
+
+	while(1)
+	{
+	      mode.LED = 7;
+	      LED_Change();
 	}
 
 	//after-gall#2
@@ -3052,17 +3073,17 @@ void Adachi_search(){
 	      Flash_store();
 
 
-	      //ゴールエリア巡回 2×2を想定
+	      //ゴールエリア巡�? 2�?2を想�?
 	      goal_area_search();
 #if 0
 
 	      Accelerate();
 	  	  y = y + 1;
-	      //マップデータから、未探索の壁を持つ座標を探す
-	      //スタートから一番遠い未探索あり座標に向かう
-	      //右ルート左ルートで分けてみる
-	      //未探索あり座標を目的地としてひとつずつまわり、最終的にスタート地点を目標にして帰ってくる
-	      //最短経路を解く、を、しっかりやらないといけなさそう
+	      //マップデータから、未探索の壁を持つ座標を探�?
+	      //スタートから�?番�?�?未探索あり座標に向か�?
+	      //右ルート左ルートで�?けてみ�?
+	      //未探索あり座標を目�?地としてひとつずつまわり、最終的にスタート地点を目標にして帰ってくる
+	      //�?短経路を解く�?�を、しっかり�?らな�?と�?けなさそ�?
 
 	  	while( !(x == 0 && y == 0)){
 	  		//壁更新
@@ -3091,10 +3112,10 @@ void Adachi_search(){
 	      }
 }
 void Map_Load(){
-	//ROMの迷路�?ータをRAMに入れる
+	//ROMの迷路?��?ータをRAMに入れる
 	Flash_load();
 
-	//work_ram[]の�?ータをwall[][]とwalk_map[][]に入れる
+	//work_ram[]の?��?ータをwall[][]とwalk_map[][]に入れる
 	static int i = 0, j=0,k=0;
 
 	//壁情報
@@ -3106,12 +3127,12 @@ void Map_Load(){
 			wall[i][j].west = work_ram[k+3];
 			k+=4;
 		}
-		//要�?は4*NOS*NOS番目 - 1 まで�?ま�?
-		//kは60まで行ったあと�?4*NOS*NOS になって値が�?�らず終わ�?
+		//�?��?は4*NOS*NOS番目 - 1 まで?��?ま?��?
+		//kは60まで行ったあと?��?4*NOS*NOS になって値が�??��らず終わ?��?
 
 	}
 
-	//歩数マッ�?
+	//歩数マッ?��?
 	for(j=(NUMBER_OF_SQUARES-1); j >= 0; j--){
 		for(i=0; i < NUMBER_OF_SQUARES; i++){
 			walk_map[i][j] = work_ram[k];
@@ -3122,17 +3143,17 @@ void Map_Load(){
 }
 void Adachi_judge2(){
 
-	/*------旋回モード選択-----*/
+	/*------旋回モード選�?-----*/
 	mode.turn = 0;
 	//------------------------------//
-	// 0 : 超信地旋回で1区画ずつ //
+	// 0 : �?信地旋回で1区画ずつ //
 	// 1 : 緩旋回                     //
-	// 2 : 片輪旋回                  //
-	// 3 : IMUで超信地旋回       //
+	// 2 : �?輪旋回                  //
+	// 3 : IMUで�?信地旋回       //
 	/*----------------------------*/
 
 
-	//今�?�評価値よりも前の評価値が小さければ...
+	//今�??��評価値よりも前の評価値が小さければ...
 	//前左右
 	  switch(my_direction){
 	  case north:
@@ -3181,13 +3202,13 @@ void Adachi_judge2(){
 	       	  x++;
 		  }
 		  else if(wall[x][y].north == NOWALL && walk_map[x][y+1] < walk_map[x][y] && y < NUMBER_OF_SQUARES-1){
-			  //左�?
+			  //左?��?
 			  L_turn_select();
 	       	  my_direction = north;
 	       	  y++;
 		  }
 		  else if(wall[x][y].south == NOWALL && walk_map[x][y-1] < walk_map[x][y] && y > 0){
-			  //右�?
+			  //右?��?
 			  R_turn_select();
 	       	  my_direction = south;
 	       	  y--;
@@ -3259,13 +3280,13 @@ void Adachi_judge2(){
 	       	  x--;
 		  }
 		  else if(wall[x][y].south == NOWALL &&walk_map[x][y-1] < walk_map[x][y] && y > 0){
-			  //左�?
+			  //左?��?
 			  L_turn_select();
 	       	  my_direction = south;
 	       	  y--;
 		  }
 		  else if(wall[x][y].north == NOWALL &&walk_map[x][y+1] < walk_map[x][y] && y < NUMBER_OF_SQUARES-1){
-			  //右�?
+			  //右?��?
 			  R_turn_select();
 	       	  my_direction = north;
 	       	  y++;
@@ -3299,24 +3320,24 @@ void Adachi_search2(){
 
 	Map_Load();
 
-	//座標�?�初期�?
+	//座標�??��初期?��?
 	x = y = 0;
-	//方向�?�初期�?
+	//方向�??��初期?��?
 	my_direction=north;
 
 	/*ここまで*/
 
-	//壁情報の初期�?
+	//壁情報の初期?��?
 	wall_set();
 
 	//開始位置の後ろはWALL
-	//左右はwall_set()でセ�?�?
+	//左右はwall_set()でセ?��??��?
 	wall[x][y].south = WALL;
 
-	//歩数マップ�?�更新(ここでは初期�?)
+	//歩数マップ�??��更新(ここでは初期?��?)
 	Walk_Map_Update();
 
-	//�?初�?�直進
+	//?��?初�??��直進
 	Start_Accel();
 
 	x = 0;
@@ -3345,18 +3366,18 @@ void Adachi_search2(){
 	      mapcopy();
 	      Flash_store();
 
-	      //ゴールエリア巡回 2×2を想定
+	      //ゴールエリア巡�? 2�?2を想�?
 	      goal_area_search();
 
 #if 0
 
 	      Accelerate();
 	  	  y = y + 1;
-	      //マップデータから、未探索の壁を持つ座標を探す
-	      //スタートから一番遠い未探索あり座標に向かう
-	      //右ルート左ルートで分けてみる
-	      //未探索あり座標を目的地としてひとつずつまわり、最終的にスタート地点を目標にして帰ってくる
-	      //最短経路を解く、を、しっかりやらないといけなさそう
+	      //マップデータから、未探索の壁を持つ座標を探�?
+	      //スタートから�?番�?�?未探索あり座標に向か�?
+	      //右ルート左ルートで�?けてみ�?
+	      //未探索あり座標を目�?地としてひとつずつまわり、最終的にスタート地点を目標にして帰ってくる
+	      //�?短経路を解く�?�を、しっかり�?らな�?と�?けなさそ�?
 
 	  	while( !(x == 0 && y == 0)){
 	  		//壁更新
@@ -3383,13 +3404,13 @@ void Adachi_search2(){
 
 
 void Shortest_Run_Judge(){
-	/*------旋回モード選択-----*/
+	/*------旋回モード選�?-----*/
 	mode.turn = 1;
 	//------------------------------//
-	// 0 : 超信地旋回で1区画ずつ //
+	// 0 : �?信地旋回で1区画ずつ //
 	// 1 : 緩旋回                     //
-	// 2 : 片輪旋回                  //
-	// 3 : IMUで超信地旋回       //
+	// 2 : �?輪旋回                  //
+	// 3 : IMUで�?信地旋回       //
 	/*----------------------------*/
 
 
@@ -3439,13 +3460,13 @@ void Shortest_Run_Judge(){
 	  		       	  x++;
 	  			  }
 	  			  else if(wall[x][y].north == NOWALL && walk_map[x][y+1] < walk_map[x][y] && y < NUMBER_OF_SQUARES-1){
-	  				  //左�?
+	  				  //左?��?
 	  				  L_turn_select();
 	  		       	  my_direction = north;
 	  		       	  y++;
 	  			  }
 	  			  else if(wall[x][y].south == NOWALL && walk_map[x][y-1] < walk_map[x][y] && y > 0){
-	  				  //右�?
+	  				  //右?��?
 	  				  R_turn_select();
 	  		       	  my_direction = south;
 	  		       	  y--;
@@ -3513,13 +3534,13 @@ void Shortest_Run_Judge(){
 	  		       	  x--;
 	  			  }
 	  			  else if(wall[x][y].south == NOWALL &&walk_map[x][y-1] < walk_map[x][y] && y > 0){
-	  				  //左�?
+	  				  //左?��?
 	  				  L_turn_select();
 	  		       	  my_direction = south;
 	  		       	  y--;
 	  			  }
 	  			  else if(wall[x][y].north == NOWALL &&walk_map[x][y+1] < walk_map[x][y] && y < NUMBER_OF_SQUARES-1){
-	  				  //右�?
+	  				  //右?��?
 	  				  R_turn_select();
 	  		       	  my_direction = north;
 	  		       	  y++;
@@ -3547,15 +3568,15 @@ void Shortest_Run_Judge(){
 }
 void Shortest_Run(){
 
-	//ROMの迷路�?ータをRAMに入れる
+	//ROMの迷路?��?ータをRAMに入れる
 	Map_Load();
 
-	//座標�?�初期�?
+	//座標�??��初期?��?
 	x = y = 0;
-	//方向�?�初期�?
+	//方向�??��初期?��?
 	my_direction=north;
 
-	//�?初�?�直進
+	//?��?初�??��直進
 	Start_Accel();
 
 	x = 0;
@@ -3578,8 +3599,8 @@ void Shortest_Run(){
 	      mode.LED = 0;
 	      LED_Change();
 	      while(1){
-	    	  printf("小数のほう : %lf \r\n",goal_time[0]);
-	    	  printf("整数のほう : %lf \r\n",goal_time[1]);
+	    	  printf("小数のほ�? : %lf \r\n",goal_time[0]);
+	    	  printf("整数のほ�? : %lf \r\n",goal_time[1]);
 	    	  printf("\r\n");
 	      }
 }
@@ -3590,7 +3611,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)  // 割り込み0.05
 {
 	//static double angular_velo=CURVE_SPEED*2/90;
 	//static int k=0;
-	static int k=0;
+	static int k=0, log_counter=0;
   if(htim == &htim1){
 	  elapsed_time += T1;
 	  switch(mode.interrupt){
@@ -3624,6 +3645,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)  // 割り込み0.05
 
 	    //Encoder_Get();
 	    imu_data = IMU_Get_Data();
+	    if( ((log_counter%10) == 0) && (log_counter < 1000*120) )
+	    {
+	    	FLASH_Write_Word_F(run_log_address, (float)imu_data);
+	    	run_log_address+= 0x04;
+	    }
+	    log_counter++;
+	    //角�?�度をflashに書き込んで�?きた�?.
+	    //時間がかかる場合�?�使�?物にならな�?
+	    //unlockして消去して書き込んでlockするを割り込み中に�?る�?�か�?
+	    //先輩のコードを見る限り、走行中の�?ータはRAMに入って�?る�?�停止後に�?括で入れて�?る�?�sectorの消去はスイ�?チを押したときにするみたい。多�?走行前に押して、新しく�?ータを書き込めるようにするため�?
+	    //自�?のは、最初にflashを削除して、割り込み中に角�?�度をそのままflashに書き込�?のを試してみ�?
+	    //まず�?�域の確�?
+	    //sector削除の関数記述+ アドレスの定義
 
 
 	    switch(mode.control){
@@ -3688,7 +3722,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)  // 割り込み0.05
 			//Left_Wall_Control();
 	      }
 	    }
-	    else if( mode.accel == 4 ){ //左に旋回�?�?
+	    else if( mode.accel == 4 ){ //左に旋回?��??��?
 	      if(Target_R_velo < SEARCH_SPEED * 124.6/90){
 
 	    	Target_R_velo += a_curve;
@@ -3704,7 +3738,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)  // 割り込み0.05
 		    				//Left_Wall_Control();
 		      }
 		    }
-	    else if( mode.accel == 6 ){//右に旋回�?�?
+	    else if( mode.accel == 6 ){//右に旋回?��??��?
 	      if(Target_L_velo < SEARCH_SPEED * 124.6/90){
 
 	    	Target_R_velo -= a_curve;
@@ -3720,7 +3754,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)  // 割り込み0.05
 	    		    				//Left_Wall_Control();
 	    	}
 	    }
-	    //回転角速度のインクリメント
+	    //回転角�?�度のインクリメン�?
 //	    else if( mode.accel == 8 ){//右に旋回減�??
 //	      if(Target_Rad_velo < TURN_SPEED){
 //	  	    Target_Rad_velo += 0.01;
@@ -3736,12 +3770,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)  // 割り込み0.05
 		if(timer <= 2000){
 #if 1
 			if((int)timer % 5== 0){
-				//普通に取る or 倍速で取る
+				//普通に取る or 倍�?�で取る
 		    // identify[k] = (L_velocity + R_velocity)/2;
 		     k++;
 			}
 #else
-		identify[(int)timer] = imu_data;//角速度 rad/s
+		identify[(int)timer] = imu_data;//角�?�度 rad/s
 #endif
 		}
 
@@ -3759,7 +3793,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)  // 割り込み0.05
 		case 1://ログ取り用
 			//
 			Tim_Count();
-			//速度をとる
+			//速度をと�?
 	      	EN3_L.count = TIM3 -> CNT;
 		    EN4_R.count = TIM4 -> CNT;
 		    EN3_L.count = -(EN3_L.count - (30000-1));
@@ -3769,25 +3803,25 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)  // 割り込み0.05
 
 		    Encoder_Reset();
 
-		    //o 速度の取
+		    //o 速度の�?
 		    L_velocity = Velocity_Get( (float)EN3_L.count , T1 );
 			R_velocity = Velocity_Get( (float)EN4_R.count , T1 );
-			//配列に格納
-			//角速度取得　rad/s
+			//配�?�に格�?
+			//角�?�度取得�??rad/s
 			imu_data = IMU_Get_Data();
-			//3000回で6000個のデータを入れる
+			//3000回で6000個�?��?ータを�?�れる
 			if(timer <= 48000){
 #if 1
 				if((int)timer % 60 == 0){
 
-					//普通に取る or 倍速で取る
+					//普通に取る or 倍�?�で取る
 			     //identify[k] = (L_velocity + R_velocity)/2;
-			     //identify[k] =  imu_data;//角速度
+			     //identify[k] =  imu_data;//角�?�度
 			     k++;
 
 				}
 #else
-			identify[(int)timer] = imu_data;//角速度 rad/s
+			identify[(int)timer] = imu_data;//角�?�度 rad/s
 #endif
 
 
@@ -3818,7 +3852,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)  // 割り込み0.05
 
 /*---- DEFINING FUNCTION ----*/
 
-//実行時に切り替えるモード
+//実行時に�?り替えるモー�?
 void Exe_num0(){
 //
 ////printf("%lf\r\n",(double)zg);
@@ -3836,16 +3870,16 @@ void Exe_num1(){
 }
 void Exe_num2(){
 //        	  if(timer == 10)
-//        		  printf("小数のほう : %lf \r\n",timer);
+//        		  printf("小数のほ�? : %lf \r\n",timer);
 //        	  if(self_timer == 10000)
-//        		  printf("整数のほう : %lf \r\n",self_timer/1000);
+//        		  printf("整数のほ�? : %lf \r\n",self_timer/1000);
 
 	Shortest_Run();
         	  //start_calib();
 
 }
 void Exe_num3(){
-	  //printf("helloあいうえお\r\n");
+	  //printf("helloあい�?えお\r\n");
 
 
         	  Flash_load();
@@ -3879,14 +3913,14 @@ void Exe_num4(){
 //	  timer = 0;
 //	  self_timer = 0;
 //	  while(1){
-//	  //duty比0.05
+//	  //duty�?0.05
 //#if 0
 //		  Volt_Set(0.444, &R_motor, -0.444, &L_motor);
 //#else
 //		  R_motor = msig_input * 4200;
 //		  L_motor = -msig_input * 4200;
 //#endif
-		  //startから1秒立ったら止まる。
+		  //startから1秒立ったら止まる�??
 #if 0
 		  if(timer >= 80000){
 		  Motor_PWM_Stop();
@@ -3961,6 +3995,9 @@ void Exe_num5(){
 #endif
 }
 void Exe_num6(){
+
+	Target_velocity = 90;
+	mode.control = 3;
 #if 0
 //    			HAL_TIM_Base_Stop_IT(&htim1);
 //    			HAL_TIM_Base_Stop_IT(&htim8);
@@ -4004,9 +4041,17 @@ void Exe_num6(){
 void Exe_num7(){
 	  //mode.control = 5;
 	 // mode.control = 3; //1 Left_wall
-	Target_velocity = 0;
-	mode.control = 0;
+	FLASH_ReadData(start_adress_sector8, (uint32_t *)data_log, 1024*20);
 
+	HAL_Delay(1000);
+
+	for(int i = 0; i < 1024*20; i++)
+		printf("%d, %f\r\n",i , data_log[i]);
+	printf("終了\r\n");
+	while(1)
+	{
+
+	}
 #if 1
 
 //        	  map_init();
@@ -4075,6 +4120,9 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
+  FLASH_Erease8();
+  run_log_address = start_adress_sector8;
+
   Encoder_Start();
   Encoder_Reset();
 
@@ -4098,7 +4146,7 @@ int main(void)
 //      printf("EN3_L.integrate : %d \r\n", EN3_L.integrate);
 //      printf("EN4_R.integrate : %d \r\n", EN4_R.integrate);
 //      printf("EN_Body.integrate : %d \r\n", EN_Body.integrate);
-	  //誤差補正のオフセット値決定
+	  //誤差補正のオフセ�?ト�?�決�?
 	  IMU_Calib();
 
 	  while(1){
@@ -4732,7 +4780,7 @@ static void MX_USART1_UART_Init(void)
 
   /* USER CODE END USART1_Init 1 */
   huart1.Instance = USART1;
-  huart1.Init.BaudRate = 9600;
+  huart1.Init.BaudRate = 115200;
   huart1.Init.WordLength = UART_WORDLENGTH_8B;
   huart1.Init.StopBits = UART_STOPBITS_1;
   huart1.Init.Parity = UART_PARITY_NONE;
@@ -4815,6 +4863,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PA14 */
+  GPIO_InitStruct.Pin = GPIO_PIN_14;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PD2 */
   GPIO_InitStruct.Pin = GPIO_PIN_2;
