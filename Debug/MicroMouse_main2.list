@@ -43,11 +43,11 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING
  19 .debug_line   0000ff17  00000000  00000000  0006d022  2**0
                   CONTENTS, READONLY, DEBUGGING
- 20 .debug_str    000c883d  00000000  00000000  0007cf39  2**0
+ 20 .debug_str    000c883c  00000000  00000000  0007cf39  2**0
                   CONTENTS, READONLY, DEBUGGING
- 21 .comment      0000007b  00000000  00000000  00145776  2**0
+ 21 .comment      0000007b  00000000  00000000  00145775  2**0
                   CONTENTS, READONLY
- 22 .debug_frame  000066bc  00000000  00000000  001457f4  2**2
+ 22 .debug_frame  000066bc  00000000  00000000  001457f0  2**2
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -7439,7 +7439,7 @@ void Walk_Map_Update(){
  800be70:	60fb      	str	r3, [r7, #12]
  800be72:	e013      	b.n	800be9c <Walk_Map_Update+0x78>
 		for(j=Y_GOAL_LESSER; j <= Y_GOAL_LARGER; j++){
- 800be74:	2309      	movs	r3, #9
+ 800be74:	2304      	movs	r3, #4
  800be76:	60bb      	str	r3, [r7, #8]
  800be78:	e00a      	b.n	800be90 <Walk_Map_Update+0x6c>
 			walk_map[i][j] = 0;
@@ -7456,7 +7456,7 @@ void Walk_Map_Update(){
  800be8c:	3301      	adds	r3, #1
  800be8e:	60bb      	str	r3, [r7, #8]
  800be90:	68bb      	ldr	r3, [r7, #8]
- 800be92:	2b0a      	cmp	r3, #10
+ 800be92:	2b05      	cmp	r3, #5
  800be94:	ddf1      	ble.n	800be7a <Walk_Map_Update+0x56>
 	for(i=X_GOAL_LESSER; i <= X_GOAL_LARGER; i++){
  800be96:	68fb      	ldr	r3, [r7, #12]
@@ -8558,7 +8558,7 @@ void goal_area_search(){
 		if(y == Y_GOAL_LESSER){
  800c786:	4ba8      	ldr	r3, [pc, #672]	; (800ca28 <goal_area_search+0x6c8>)
  800c788:	781b      	ldrb	r3, [r3, #0]
- 800c78a:	2b09      	cmp	r3, #9
+ 800c78a:	2b04      	cmp	r3, #4
  800c78c:	d103      	bne.n	800c796 <goal_area_search+0x436>
 			orbit = 'L';
  800c78e:	234c      	movs	r3, #76	; 0x4c
@@ -8569,7 +8569,7 @@ void goal_area_search(){
 		else if(y == Y_GOAL_LARGER){
  800c796:	4ba4      	ldr	r3, [pc, #656]	; (800ca28 <goal_area_search+0x6c8>)
  800c798:	781b      	ldrb	r3, [r3, #0]
- 800c79a:	2b0a      	cmp	r3, #10
+ 800c79a:	2b05      	cmp	r3, #5
  800c79c:	d102      	bne.n	800c7a4 <goal_area_search+0x444>
 			orbit = 'R';
  800c79e:	2352      	movs	r3, #82	; 0x52
@@ -9429,7 +9429,7 @@ void goal_area_search(){
 		if(y == Y_GOAL_LESSER){
  800ce64:	4b78      	ldr	r3, [pc, #480]	; (800d048 <goal_area_search+0xce8>)
  800ce66:	781b      	ldrb	r3, [r3, #0]
- 800ce68:	2b09      	cmp	r3, #9
+ 800ce68:	2b04      	cmp	r3, #4
  800ce6a:	d103      	bne.n	800ce74 <goal_area_search+0xb14>
 			orbit = 'R';
  800ce6c:	2352      	movs	r3, #82	; 0x52
@@ -9440,7 +9440,7 @@ void goal_area_search(){
 		else if(y == Y_GOAL_LARGER){
  800ce74:	4b74      	ldr	r3, [pc, #464]	; (800d048 <goal_area_search+0xce8>)
  800ce76:	781b      	ldrb	r3, [r3, #0]
- 800ce78:	2b0a      	cmp	r3, #10
+ 800ce78:	2b05      	cmp	r3, #5
  800ce7a:	d102      	bne.n	800ce82 <goal_area_search+0xb22>
 			orbit = 'L';
  800ce7c:	234c      	movs	r3, #76	; 0x4c
@@ -10932,11 +10932,11 @@ void Adachi_search(){
  800d930:	d8eb      	bhi.n	800d90a <Adachi_search+0x62>
  800d932:	4b08      	ldr	r3, [pc, #32]	; (800d954 <Adachi_search+0xac>)
  800d934:	781b      	ldrb	r3, [r3, #0]
- 800d936:	2b08      	cmp	r3, #8
+ 800d936:	2b03      	cmp	r3, #3
  800d938:	d9e7      	bls.n	800d90a <Adachi_search+0x62>
  800d93a:	4b06      	ldr	r3, [pc, #24]	; (800d954 <Adachi_search+0xac>)
  800d93c:	781b      	ldrb	r3, [r3, #0]
- 800d93e:	2b0a      	cmp	r3, #10
+ 800d93e:	2b05      	cmp	r3, #5
  800d940:	d8e3      	bhi.n	800d90a <Adachi_search+0x62>
  800d942:	e000      	b.n	800d946 <Adachi_search+0x9e>
 			break;
@@ -11252,11 +11252,11 @@ void Adachi_search2(){
  800db46:	d8f1      	bhi.n	800db2c <Adachi_search2+0x5c>
  800db48:	4b17      	ldr	r3, [pc, #92]	; (800dba8 <Adachi_search2+0xd8>)
  800db4a:	781b      	ldrb	r3, [r3, #0]
- 800db4c:	2b08      	cmp	r3, #8
+ 800db4c:	2b03      	cmp	r3, #3
  800db4e:	d9ed      	bls.n	800db2c <Adachi_search2+0x5c>
  800db50:	4b15      	ldr	r3, [pc, #84]	; (800dba8 <Adachi_search2+0xd8>)
  800db52:	781b      	ldrb	r3, [r3, #0]
- 800db54:	2b0a      	cmp	r3, #10
+ 800db54:	2b05      	cmp	r3, #5
  800db56:	d8e9      	bhi.n	800db2c <Adachi_search2+0x5c>
 	}
 
@@ -12308,11 +12308,11 @@ void Shortest_Run(){
  800e2de:	d8f5      	bhi.n	800e2cc <Shortest_Run+0x34>
  800e2e0:	4b25      	ldr	r3, [pc, #148]	; (800e378 <Shortest_Run+0xe0>)
  800e2e2:	781b      	ldrb	r3, [r3, #0]
- 800e2e4:	2b08      	cmp	r3, #8
+ 800e2e4:	2b03      	cmp	r3, #3
  800e2e6:	d9f1      	bls.n	800e2cc <Shortest_Run+0x34>
  800e2e8:	4b23      	ldr	r3, [pc, #140]	; (800e378 <Shortest_Run+0xe0>)
  800e2ea:	781b      	ldrb	r3, [r3, #0]
- 800e2ec:	2b0a      	cmp	r3, #10
+ 800e2ec:	2b05      	cmp	r3, #5
  800e2ee:	d8ed      	bhi.n	800e2cc <Shortest_Run+0x34>
 
 	}
