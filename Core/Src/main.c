@@ -3037,7 +3037,6 @@ void Adachi_search(){
 	x = 0;
 	y = y + 1;
 
-	int test_num = 0;
 	while( !((x>=X_GOAL_LESSER) && (x<=X_GOAL_LARGER)) || !( (y>=Y_GOAL_LESSER) && (y<=Y_GOAL_LARGER) ) ){
 		//壁更新
 		wall_set();
@@ -3048,15 +3047,6 @@ void Adachi_search(){
 		//次の動きを判定し動く
 		Adachi_judge();
 
-		test_num++;
-		if(test_num == 2)
-			break;
-	}
-
-	while(1)
-	{
-	      mode.LED = 7;
-	      LED_Change();
 	}
 
 	//after-gall#2
