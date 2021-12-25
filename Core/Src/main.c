@@ -74,11 +74,11 @@
 
 #define DRIFT_FIX 0.00006375
 
-#define NUMBER_OF_SQUARES 16//4 //16
-#define X_GOAL_LESSER 6//6//2//3//6
-#define Y_GOAL_LESSER 4//7//9//2//3//9
+#define NUMBER_OF_SQUARES 9//4 //16
+#define X_GOAL_LESSER 7//6//2//3//6
+#define Y_GOAL_LESSER 7//7//9//2//3//9
 #define X_GOAL_LARGER 7//3//7
-#define Y_GOAL_LARGER 5//3//10
+#define Y_GOAL_LARGER 7//3//10
 
 #define BACKUP_FLASH_SECTOR_NUM     FLASH_SECTOR_1
 #define BACKUP_FLASH_SECTOR_SIZE    1024*16
@@ -230,7 +230,7 @@ typedef struct {
 }PID_Control;
 
 PID_Control Wall = {
-		0.6,//0.5,//1.0,//0.9,//1.8,//1.0,//0.3, //0.8, ///oKP
+		0.1,//0.5,//1.0,//0.9,//1.8,//1.0,//0.3, //0.8, ///oKP
 		0.2,//0.3,//0.5,//50,//30,//0.5,//0.25, //oKI //調整の余地あり
 		0.00006//0.00002//0.0000006//0.000006//.00003//0.0000006//0.001//0.0005 //oKD
 }, velocity = {
