@@ -162,6 +162,7 @@ float Target_pulse = 90/MM_PER_PULSE;//46680.0; //45660;
 float Target_pul_quarter = QUARTER_ROTATE_PULSE;
 float Target_rotate = 0;
 extern float Target_R_velo, Target_L_velo;
+extern float wall_target_error;
 
 //目標角�?�度 rad/s
 float Target_Rad_velo=0;
@@ -177,6 +178,8 @@ double timer=0;
 double elapsed_time=0; //経過時間
 //float identify[5010];
 int All_Pulse_cut=0, All_Pulse_anytime=0;
+
+double angle=0;
 
 
 
@@ -231,8 +234,8 @@ typedef struct {
 
 PID_Control Wall = {
 		0.1,//0.5,//1.0,//0.9,//1.8,//1.0,//0.3, //0.8, ///oKP
-		0.2,//0.3,//0.5,//50,//30,//0.5,//0.25, //oKI //調整の余地あり
-		0.00006//0.00002//0.0000006//0.000006//.00003//0.0000006//0.001//0.0005 //oKD
+		0,//0.2,//0.3,//0.5,//50,//30,//0.5,//0.25, //oKI //調整の余地あり
+		0//0.00006//0.00002//0.0000006//0.000006//.00003//0.0000006//0.001//0.0005 //oKD
 }, velocity = {
 		1.1941,//6.6448,//0.099599,//4.8023,//1.5018,//2.0751,//1.88023//4.09640,//4.2616,//4.8023,//1.2, //10 //20 //KP
 		33.5232,//248.4198,//10.1707,//91.6848,//24.0379,//6.0917,//5.4803//23.1431,//21.1832//91.6848,//100,//40, //100.0//50 //KI
@@ -723,14 +726,14 @@ double lowpass_filter(float x, float x0, float r)
 	return ((r)*(x) + (1.0 - (r))* (x0));
 }
 double IMU_Get_Data(){// IMUの値を取
-	double  /*imu_pre_angle=0,*/ imu_accel=0; //imu_pre_accel=0;
-	static double LPF=0, lastLPF=0;
+	double  LPF=0,/*imu_pre_angle=0,*/ imu_accel=0; //imu_pre_accel=0;
+	static double lastLPF=0;
     read_gyro_data();
     read_accel_data();
 
     //atan2(za,xa);
     imu_accel =  ( ( (double)zg - offset )/16.4) * PI /180;//rad/s or rad/0.001s
-    LPF = lowpass_filter(imu_accel, lastLPF,0.01);
+    LPF = lowpass_filter((float)imu_accel, (float)lastLPF,0.01);
     imu_angle += T1*LPF;
     lastLPF = LPF;
 	//imu_pre_accel = imu_accel;
@@ -739,7 +742,7 @@ double IMU_Get_Data(){// IMUの値を取
 	//0.95 * imu_pre_angle + 0.05 * (imu_pre_accel + imu_accel) * T1 / 2;
 	Body_angle = imu_angle * 180 / PI;
 
-	  return imu_accel;
+	  return LPF;
 }
 void IMU_Control(double target, double now, double T, double KP, double KI, double KD){
 
@@ -1008,7 +1011,7 @@ void Accelerate(){
 	Motor_Count_Clear();
 	//IMU_init();
 
-	mode.control = 3;
+	mode.control = 4;
     EN3_L.integrate = 0;
     EN4_R.integrate = 0;
 	EN_Body.integrate = 0;
@@ -1053,11 +1056,11 @@ void Decelerate(){
 	//IMU_init();
 	//mode.control = 4;
 
-	mode.control = 3;
+	mode.control = 4;
 	//printf("%d\r\n",EN3_L.integrate + EN4_R.integrate);
-	while( (EN3_L.integrate + EN4_R.integrate < ACCE_DECE_PULSE * 2) &&  ( (sl_average + sr_average )/2 < 1900)){
+	while( (EN3_L.integrate + EN4_R.integrate < ACCE_DECE_PULSE * 2) &&  ( (sl_average + sr_average )/2 < 1850)){
 		mode.accel = 3;
-		printf("%d , %d\r\n",EN3_L.integrate , EN4_R.integrate);
+		//printf("%d , %d\r\n",EN3_L.integrate , EN4_R.integrate);
 #if 1
 		if(EN3_L.integrate + EN4_R.integrate < ACCE_DECE_PULSE * 2 - (WALL_JUDGE_PULSE  * 2 *3/5) ){//ここの閾値の意味:減�?�する距離は半区画 -
 		  if(fr_average > RIGHT_WALL && fl_average > LEFT_WALL){
@@ -1290,6 +1293,7 @@ void IMU_turn(int8_t target_angle, double target_angle_velo){
 
 void turn_right(){
 
+	int check = 0;
 	//左右の車輪速度制御
 	//or 角�?�度制御で旋回
 	  uint8_t counter=0;
@@ -1316,7 +1320,10 @@ void turn_right(){
 //		  Target_Rad_velo = -10;
 		  //pulse_check = EN3_L.integrate + (-1)*EN4_R.integrate;
 		  //printf("turn中 %d\r\n",pulse_check);
-	    	}
+//		  check = EN3_L.integrate + (-1)*EN4_R.integrate;
+//	  printf("回転中: pulse=%d, target_pul=%f\r\n",check, Target_pul_quarter*2);
+	  }
+
 
 	      mode.enc = 0;
 	      Target_Rad_velo = 0;
@@ -1661,9 +1668,20 @@ void start_calib(){
 
 }
 void R_turn_select(){
+	static int check=0;
+	static float sens=0;
+
+	static float pulse = 0;
+
   switch(mode.turn){
   case 0:
 	  Decelerate();
+	  sens = (sl_average + sr_average )/2;
+	  pulse = EN3_L.integrate + EN4_R.integrate;
+//	  while(1)
+//	  {
+//	  printf("センサ値 : %f, パルス : %f\r\n", sens, pulse);
+//	  }
 	  wait(0.3);
 	  turn_right();
 	  wait(0.3);
@@ -3639,9 +3657,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)  // 割り込み0.05
 
 	    //Encoder_Get();
 	    imu_data = IMU_Get_Data();
+	    angle += T1*imu_data* 180 / PI;
 	    if( ((log_counter%10) == 0) && (log_counter < 1000*120) )
 	    {
-	    	FLASH_Write_Word_F(run_log_address, (float)imu_data);
+	    	FLASH_Write_Word_F(run_log_address, (float)Body_angle/*imu_data*/);
 	    	run_log_address+= 0x04;
 	    }
 	    log_counter++;
@@ -3657,23 +3676,24 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)  // 割り込み0.05
 	    switch(mode.control){
 	       case 0:
 	    	   Side_Wall_Control(fr_average,fl_average,T8,Wall.KP, Wall.KI,Wall.KD);
-	    	   //Enc_Velo_Control(T1, velocity.KP, velocity.KI, velocity.KD);
-	    	   IMU_Control(0, imu_data, T1, imu.KP,imu.KI, 0 );
-	    	   //mode.imu = 0;
+	    	   Enc_Velo_Control(T1, velocity.KP, velocity.KI, velocity.KD);
+	    	   //IMU_Control(0, imu_data, T1, imu.KP,imu.KI, imu.KD );
+	    	   mode.imu = 0;
 	    	   break;
 	       case 1:
 	    	   Left_Wall_Control(distance_wall_left, fl_average,T8, Wall.KP, Wall.KI, Wall.KD);
-	    	   //Enc_Velo_Control(T1, velocity.KP, velocity.KI, velocity.KD);
-	    	   IMU_Control(0, imu_data, T1, imu.KP,imu.KI, 0 );
-	    	   //mode.imu = 0;
-	    	   break;
+	    	   Enc_Velo_Control(T1, velocity.KP, velocity.KI, velocity.KD);
+	    	  //IMU_Control(0, imu_data, T1, imu.KP,imu.KI, imu.KD);
+	    	   mode.imu = 0;
+	    	  break;
 	       case 2:
 	    	   Right_Wall_Control(distance_wall_right, fr_average,T8, Wall.KP, Wall.KI, Wall.KD);
-	    	   //Enc_Velo_Control(T1, velocity.KP, velocity.KI, velocity.KD);
-	    	   IMU_Control(0, imu_data, T1, imu.KP,imu.KI, 0 );
-	    	   //mode.imu = 0;
+	    	   Enc_Velo_Control(T1, velocity.KP, velocity.KI, velocity.KD);
+	    	   //IMU_Control(0, imu_data, T1, imu.KP,imu.KI, imu.KD);
+	    	   mode.imu = 0;
 	    	   break;
 	       case 3:
+
 	    	   IMU_Control(Target_Rad_velo, imu_data, T1, imu.KP,imu.KI, imu.KD );
 	    	   break;
 	       case 4:
@@ -3710,7 +3730,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)  // 割り込み0.05
 	      }
 	    }
 	    else if( mode.accel == 3 ){
-		  if(Target_velocity > 5){
+		  if(Target_velocity > 2){
 
 			Target_velocity -= a;
 			//Left_Wall_Control();
@@ -3875,12 +3895,22 @@ void Exe_num2(){
 void Exe_num3(){
 	  //printf("helloあい�?えお\r\n");
 
-
+#if 0
         	  Flash_load();
           	  HAL_Delay(2000);
 
           	  mapprint();
           	  while(1);
+#else
+
+          	Target_velocity = 0;
+          	mode.control = 3;
+
+          	while(elapsed_time < 120.0);
+
+          	Target_velocity = 0;
+          	while(1);
+#endif
 //壁制御直進
 //	  HAL_Delay(1500);
 //	  mode.control=0;
@@ -3901,7 +3931,8 @@ void Exe_num3(){
 
 }
 void Exe_num4(){
-	Tire_Maintenance();
+	turn_right();
+	//Tire_Maintenance();
 //	  //HAL_Delay(1500);
 //	  mode.interrupt = 1;
 //	  timer = 0;
@@ -3953,6 +3984,16 @@ void Exe_num4(){
 void Exe_num5(){
 
 
+	Target_velocity = 0;
+	mode.control = 3;
+
+	while(All_Pulse_anytime < Target_pulse*20)
+	{
+Target_Rad_velo = -5;
+	}
+Target_velocity = 0;
+	while(1);
+
 //	  //Exe_num5();
 //	  mode.control = 4;
 //	  Target_velocity = 90;
@@ -3992,8 +4033,8 @@ void Exe_num5(){
 }
 void Exe_num6(){
 
-	Target_velocity = 90;
-	mode.control = 3;
+	Target_velocity = SEARCH_SPEED;
+	mode.control = 4;
 
 	while(All_Pulse_anytime < Target_pulse*20);
 
@@ -4047,9 +4088,13 @@ void Exe_num7(){
 
 	HAL_Delay(1000);
 
+	float timer = 0;
 	for(int i = 0; i < 1024*20; i++)
-		printf("%d, %f\r\n",i , data_log[i]);
-	printf("終了\r\n");
+	{
+		printf("%f, %f\r\n",timer , data_log[i]);
+		timer+=0.0100;
+	}
+		printf("終了\r\n");
 	while(1)
 	{
 
@@ -4136,6 +4181,7 @@ int main(void)
   {
 	  Execution_Select();
 
+
       //Execution_Switch();
 
 //		HAL_TIM_Base_Stop_IT(&htim1);
@@ -4149,7 +4195,12 @@ int main(void)
 //      printf("EN4_R.integrate : %d \r\n", EN4_R.integrate);
 //      printf("EN_Body.integrate : %d \r\n", EN_Body.integrate);
 	  //誤差補正のオフセ�?ト�?�決�?
+	  IMU_init();
 	  IMU_Calib();
+
+	  distance_wall_right = fr_average;
+	  distance_wall_left = fl_average;
+	  wall_target_error =  fl_average - fr_average;
 
 	  while(1){
 
