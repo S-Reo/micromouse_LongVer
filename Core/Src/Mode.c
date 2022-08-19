@@ -27,6 +27,7 @@
 #include "Debug.h"
 
 #include <main.h>
+#include "CommandQueue.h"
 void InitExplore()
 {
 #if 0
@@ -1017,4 +1018,66 @@ void FullyAutonomous()
 
 
 }
+void CommandAccel(float add_distance,float start_speed,float end_speed)
+{
+	Command ac;
+	float additional_speed = end_speed - start_speed;
+	ac.Acceleration = T1*additional_speed*additional_speed / (2*add_distance);
+	ac.Mileage = 2*add_distance;
+	ac.AngAccel = 0;
+	ac.FinishPhase = 0;
+	ac.WallDetect_Start = ac.Mileage*0.80;
+	setQueue(&cq,ac);
+}
+void CommandDecel(float dec_distance,float start_speed, float end_speed)
+{
+	Command dc;
+	float down_speed = start_speed - end_speed;
+	dc.Acceleration = -1 * (T1*down_speed*down_speed / (2*dec_distance) );
+	dc.Mileage = 2*dec_distance;
+	dc.AngAccel = 0;
+	dc.FinishPhase = 0;
+	dc.WallCorrectPos_Start = 0;
+	dc.WallCorrectPos_End = (dc.Mileage*0.65);
 
+	setQueue(&cq,dc);
+}
+void CQ_test()
+{
+	IT_mode = CQ;
+	PhotoSwitch();
+	KeepMileage[BODY] = 0;
+	TotalMileage[RIGHT] = 0;
+	TotalMileage[LEFT] = 0;
+	TotalMileage[BODY] = 0;
+	InitExplore();
+	TotalPulse[RIGHT] = 0;
+	TotalPulse[LEFT] = 0;
+	TotalPulse[BODY] = 0;
+
+	PIDChangeFlag(L_VELO_PID, 1);
+	PIDChangeFlag(R_VELO_PID, 1);
+
+	PIDChangeFlag(D_WALL_PID, 0);
+	PIDChangeFlag(L_WALL_PID, 0);
+	PIDChangeFlag(R_WALL_PID, 0);
+
+	ChangeLED(1);
+	initQueue(&cq);
+	CommandAccel(45, 0,90);
+
+	CommandDecel(45, 90,0);
+
+	while(1)
+	{
+//		if(TotalMileage[BODY] >= 90)
+//		{
+//			break;
+//		}
+		//printf("%f,%f\r\n",KeepMileage[BODY] + com.Mileage, TotalMileage[BODY]);
+
+	}
+	//printf("%f,%f\r\n",KeepMileage[BODY] + com.Mileage, TotalMileage[BODY]);
+
+
+}

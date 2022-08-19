@@ -50,6 +50,7 @@ void wall_init();
 void flash_store_init();
 void wall_store_running(uint8_t x, uint8_t y);
 void wall_set();
+void reflectWall(float fl,float fr, float sl, float sr);
 void wall_ram_print();
 void wall_flash_print();
 void flash_copy_to_ram();

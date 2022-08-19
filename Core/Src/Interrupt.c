@@ -18,6 +18,8 @@
 #include "ICM_20648.h"
 #include "Mode.h"
 
+#include "CommandQueue.h"
+#include "LED_Driver.h"
 int timer1,timer8, t;
 int IT_mode;
 int velodebug_flag=0;
@@ -382,6 +384,7 @@ void WritingFree_IT()
 
 }
 
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if( htim == &htim1)
@@ -393,7 +396,78 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		case WRITINGFREE:
 			WritingFree_IT();
 			break;
-		case 2:
+		case CQ:
+				PulseDisplacement[LEFT] = - (TIM3->CNT - INITIAL_PULSE);
+				TIM3->CNT = INITIAL_PULSE;
+				PulseDisplacement[RIGHT] = - (TIM4->CNT - INITIAL_PULSE);
+				TIM4->CNT = INITIAL_PULSE;
+
+				//速度 mm/s
+				CurrentVelocity[LEFT] =  (float)PulseDisplacement[LEFT] * convert_to_velocity;
+				CurrentVelocity[RIGHT] =  (float)PulseDisplacement[RIGHT] * convert_to_velocity;
+				CurrentVelocity[BODY] = (CurrentVelocity[LEFT] + CurrentVelocity[RIGHT] )*0.5f;
+
+				TotalMileage[LEFT] += CurrentVelocity[LEFT] * T1;
+				TotalMileage[RIGHT] += CurrentVelocity[RIGHT] * T1;
+				TotalMileage[BODY] = TotalMileage[LEFT] + TotalMileage[RIGHT];
+
+				TotalPulse[LEFT] += PulseDisplacement[LEFT];
+				TotalPulse[RIGHT] += PulseDisplacement[RIGHT];
+				TotalPulse[BODY] = TotalPulse[LEFT]+TotalPulse[RIGHT];
+				//角速度 rad/s
+
+			#if 1
+				//static float angle=0;
+				static float zg_last=0;
+				float zg_law;
+				//uint8_t zgb,zgf;
+				ZGyro = ReadIMU(0x37, 0x38);
+			    zg_law =  ( ZGyro - zg_offset )*convert_to_imu_angv;//16.4 * 180;//rad/s or rad/0.001s
+			    AngularV = -((0.01*zg_law) + (0.99)* (zg_last));
+			    zg_last = zg_law;
+				Angle += AngularV * T1;
+			#else
+				AngularV = ( CurrentVelocity[LEFT] - CurrentVelocity[RIGHT] ) *convert_to_angularv;
+				Angle += AngularV * T1;
+
+			#endif
+				//センサデータをもとに、フェーズが終わったかどうかを確認する
+				com.FinishPhase = ( KeepMileage[BODY] + com.Mileage) <= ( TotalMileage[BODY] ) ? true : false;
+				//com.FinishPhase = () ? true : false;//角度
+				//時間
+			//フェイズが終了していたら、キューを読む。
+			if(com.FinishPhase == true)
+			{
+				if(getQueue(&cq, &com) == true)
+				{
+					com.FinishPhase = false;
+					KeepMileage[BODY] = TotalMileage[BODY];
+
+					ChangeLED(cq.head-1);
+
+				}
+				else
+				{
+					ResetCommand(&com);
+
+					ChangeLED(5);
+				}
+			}
+
+			//キューから取り出したコマンドに応じて処理を行う
+			TargetVelocity[BODY] += com.Acceleration;
+			//AngularAcceleration += AngularLeapsity;
+			TargetAngularV += com.AngAccel;
+			//TargetAngularV += AngularAcceleration;
+			TargetVelocity[RIGHT] = ( TargetVelocity[BODY] - TargetAngularV * TREAD_WIDTH * 0.5f );
+			TargetVelocity[LEFT] = ( TargetAngularV *TREAD_WIDTH ) + TargetVelocity[RIGHT];
+
+			VelocityLeftOut = PIDControl( L_VELO_PID, TargetVelocity[LEFT], CurrentVelocity[LEFT]);
+			VelocityRightOut = PIDControl( R_VELO_PID, TargetVelocity[RIGHT], CurrentVelocity[RIGHT]);
+
+			//モータに出力
+			Motor_Switch( VelocityLeftOut, VelocityRightOut );
+
 
 			break;
 		default :

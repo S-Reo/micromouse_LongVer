@@ -169,7 +169,52 @@ void wall_set(){
 	  //flashに書き込む
 //	  wall_store_running(Pos.X,Pos.Y);
 }
+void reflectWall(float fl,float fr, float sl, float sr){
+	uint8_t wall_dir[4];
+	//壁センサ値を読んで、各方角の壁の有無を判定
+	  wall_dir[Pos.NextCar] = ( (fl + fr)/2 > FRONT_WALL)  ?   WALL : NOWALL;	//70超えたら壁あり。
+	  wall_dir[(Pos.NextCar + 1)%4] = sr > RIGHT_WALL  ?  WALL :  NOWALL;
+	  wall_dir[(Pos.NextCar + 2)%4] = NOWALL;
+	  wall_dir[(Pos.NextCar + 3)%4] = sl> LEFT_WALL ?  WALL :  NOWALL;
 
+	  //各方角の壁に壁の有無を代入
+	  Wall[Pos.NextX][Pos.NextY].north = wall_dir[0];
+	  Wall[Pos.NextX][Pos.NextY].east = wall_dir[1];
+	  Wall[Pos.NextX][Pos.NextY].south = wall_dir[2];
+	  Wall[Pos.NextX][Pos.NextY].west = wall_dir[3];
+
+	  //端の座標でなければ反対の壁も記入
+	  //uint32_t address;
+	  if(Pos.NextY < (NUMBER_OF_SQUARES-1) )
+	  {
+		  Wall[Pos.NextX][Pos.NextY+1].south = wall_dir[0];//北端でなければ
+		  //address = start_adress_sector1 + ( Pos.NextX*16) + ( (Pos.NextY+1)*16*(NUMBER_OF_SQUARES) );
+		  //FLASH_Write_Word(address+8, Wall[Pos.NextX][Pos.NextY+1].south);
+	  }
+	  if(Pos.NextX < (NUMBER_OF_SQUARES-1) )
+	  {
+		  Wall[Pos.NextX+1][Pos.NextY].west = wall_dir[1];//東端でなければ
+//		  address = start_adress_sector1 + ( (Pos.NextX+1)*16) + ( (Pos.NextY)*16*(NUMBER_OF_SQUARES) );
+//		  FLASH_Write_Word(address+12, Wall[Pos.NextX+1][Pos.NextY].west);
+	  }
+	  if(Pos.NextY > 0 )
+	  {
+		  Wall[Pos.NextX][Pos.NextY-1].north = wall_dir[2];//南端でなければ
+//		  address = start_adress_sector1 + ( Pos.NextX*16) + ( (Pos.NextY-1)*16*(NUMBER_OF_SQUARES) );
+//		  FLASH_Write_Word(address+0, Wall[Pos.NextX][Pos.NextY-1].north);
+	  }
+	  if(Pos.NextX > 0 )
+	  {
+		  Wall[Pos.NextX-1][Pos.NextY].east = wall_dir[3];//西端でなければ
+//		  address = start_adress_sector1 + ( (Pos.NextX-1)*16) + ( Pos.NextY*16*(NUMBER_OF_SQUARES) );
+//		  FLASH_Write_Word(address+4, Wall[Pos.NextX-1][Pos.NextY].east);
+	  }
+
+
+	  //一旦flashお休み。
+	  //flashに書き込む
+//	  wall_store_running(Pos.X,Pos.Y);
+}
 
 void init_map(int x, int y)
 {

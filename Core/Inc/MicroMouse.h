@@ -46,8 +46,10 @@ extern float TargetVelocity[3];
 //extern float TotalPulseRight;
 
 extern int KeepPulse[3];
+extern float KeepMileage[3];
 extern int PulseDisplacement[3];
 extern int TotalPulse[3];
+extern float TotalMileage[3];
 
 //角速度 rad/s
 extern float AngularV;

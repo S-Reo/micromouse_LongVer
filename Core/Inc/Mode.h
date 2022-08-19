@@ -17,6 +17,8 @@
 #define EXPLORE				6
 #define WRITINGFREE 		7
 
+#define CQ	1
+
 void Debug();
 void ParameterSetting();
 void Explore();
@@ -28,5 +30,6 @@ void GainTestRWall();
 void GainTestDWall();
 void GainTestAVelo();
 
+void CQ_test();
 #endif /* INC_MODE_H_ */
 //右130、左140

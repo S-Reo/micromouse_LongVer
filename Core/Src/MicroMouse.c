@@ -34,8 +34,10 @@ float TargetVelocity[3];
 //float TotalPulseLeft;
 //float TotalPulseRight;
 int KeepPulse[3];
+float KeepMileage[3];
 int PulseDisplacement[3];
 int TotalPulse[3];
+float TotalMileage[3];
 float AngularV=0;			//角速度 rad/s
 float EncAngV=0;
 float Angle=0;				//角度 rad/msを積算

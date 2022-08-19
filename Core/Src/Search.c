@@ -11,9 +11,30 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "Action.h"
+
+#include "WallDetect.h"
+#include "Map.h"
 int Calc;
 int SearchOrFast;
+void Search()
+{
+	float wall_data[4]={0};
+	_Bool wall_dir[4]={0};//新しい座標に入ったとき、前後左右の壁があるかどうか（後ろは100%無い。侵入してきた方向）
+	if(getWall((float *)wall_data))//割込み側で壁の更新があったら
+	{
+		reflectWall(wall_data[0],wall_data[1],wall_data[2],wall_data[3]);//現在座標じゃなくて、進行方向から求めた次の座標。
+						//計算して
+		make_map(X_GOAL_LESSER, Y_GOAL_LESSER, 0x01);
 
+		//進行方向を決める
+
+	}
+	else
+	{
+		resetWall();
+	}
+
+}
 void AdachiJudge(){
 }
 void KyushinJudge(char turn_mode)
